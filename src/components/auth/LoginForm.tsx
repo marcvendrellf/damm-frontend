@@ -7,6 +7,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DEMO_MODE } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 
 // Mock authentication — backend `/auth/*` endpoints not implemented yet.
@@ -61,6 +62,8 @@ export function LoginForm({
           type="email"
           placeholder="m@example.com"
           autoComplete="email"
+          // The demo fills in an account, so visitors only press Login.
+          defaultValue={DEMO_MODE ? "demo@damm.com" : undefined}
           required
         />
       </div>
@@ -80,6 +83,7 @@ export function LoginForm({
           name="password"
           type="password"
           autoComplete="current-password"
+          defaultValue={DEMO_MODE ? "smarttruck" : undefined}
           required
         />
       </div>

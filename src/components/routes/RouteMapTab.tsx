@@ -10,6 +10,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { DEMO_MODE } from "@/lib/api/client";
 import {
   Map,
   MapMarker,
@@ -92,7 +93,7 @@ export function RouteMapTab({ route, stops, depot }: RouteMapTabProps) {
     setLoading(true);
     async function run() {
       try {
-        const result = await fetchOsrmRoute(waypoints);
+        const result = await fetchOsrmRoute(waypoints, route.transport_id);
         if (!cancelled) setOsrm(result);
       } catch (err) {
         // OSRM down / rate-limited — fall back to straight-line legs so the
@@ -547,14 +548,27 @@ function SimControls({
 
 // ─── OSRM + timeline math ─────────────────────────────────────────────────
 
-async function fetchOsrmRoute(
+async function fetchOsrmResponse(
   waypoints: [number, number][],
-): Promise<OsrmRoute> {
+  transportId: string,
+) {
+  // The demo ships the OSRM answers for the routes its planner can save.
+  if (DEMO_MODE) {
+    const saved = await fetch(`/demo-data/osrm/${transportId}.json`);
+    if (saved.ok) return saved.json();
+  }
   const coordsPath = waypoints.map(([lng, lat]) => `${lng},${lat}`).join(";");
   const url = `https://router.project-osrm.org/route/v1/driving/${coordsPath}?overview=full&geometries=geojson&steps=false`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`OSRM ${res.status}`);
-  const data = await res.json();
+  return res.json();
+}
+
+async function fetchOsrmRoute(
+  waypoints: [number, number][],
+  transportId: string,
+): Promise<OsrmRoute> {
+  const data = await fetchOsrmResponse(waypoints, transportId);
   const r = data?.routes?.[0];
   if (!r?.geometry?.coordinates || !r.legs) throw new Error("OSRM bad payload");
 
