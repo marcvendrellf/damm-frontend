@@ -346,6 +346,8 @@ function FormPhase({
                 <Calendar
                   mode="single"
                   selected={isoToDate(field.value)}
+                  // Open on the picked day; today's month has no orders.
+                  defaultMonth={isoToDate(field.value)}
                   onSelect={(d) => {
                     if (d) field.onChange(dateToIso(d));
                   }}
