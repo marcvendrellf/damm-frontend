@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { Fragment } from "react";
+import { IconHelpCircle } from "@tabler/icons-react";
 
+import { startDemoTour } from "@/components/demo/DemoTour";
 import { useBreadcrumb } from "@/components/shell/breadcrumb";
+import { DEMO_MODE } from "@/lib/api/client";
 
 type Props = {
   onToggleSidebar: () => void;
@@ -81,6 +84,19 @@ export function Header({ onToggleSidebar, sidebarOpen }: Props) {
           );
         })}
       </nav>
+
+      {DEMO_MODE ? (
+        <button
+          type="button"
+          onClick={startDemoTour}
+          aria-label="Take the tour"
+          data-tour="restart"
+          className="mr-3 flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-ink-muted transition-colors hover:bg-white/[0.04] hover:text-ink"
+        >
+          <IconHelpCircle className="size-4" aria-hidden />
+          <span className="hidden sm:inline">Take the tour</span>
+        </button>
+      ) : null}
     </header>
   );
 }

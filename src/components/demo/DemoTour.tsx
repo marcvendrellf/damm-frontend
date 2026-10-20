@@ -1,11 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 // A first-visit guide for the demo: a hint next to the thing to click next,
 // from Login to driving a route on the map. The step is read from what is on
 // screen, so the hint follows the visitor wherever they go. It ends when they
-// press Play or skip it.
+// press Play or skip it, and the header's Take the tour button starts it again.
 
 type Side = "top" | "bottom" | "left" | "right";
 
@@ -67,7 +70,20 @@ const STEPS: Step[] = [
   },
 ];
 
+// Shown after Skip, next to the button that starts the tour again.
+const REMINDER: Step = {
+  target: '[data-tour="restart"]',
+  title: "Tour skipped",
+  body: "You can always start it again from here.",
+  side: "bottom",
+};
+
 const DONE_KEY = "smarttruck_tour_done";
+// The furthest step reached, so a reload carries on from there.
+const STEP_KEY = "smarttruck_tour_step";
+const START_EVENT = "smarttruck:tour";
+const FADE_MS = 200;
+const REMINDER_MS = 5000;
 const GAP = 12;
 const MARGIN = 8;
 
@@ -87,18 +103,30 @@ const OPPOSITE: Record<Side, Side> = {
 const clamp = (v: number, min: number, max: number) =>
   Math.min(Math.max(v, min), max);
 
-function findStep(): { index: number; el: HTMLElement } | null {
+export function startDemoTour() {
+  window.dispatchEvent(new Event(START_EVENT));
+}
+
+function isShown(el: HTMLElement | null): el is HTMLElement {
+  return !!el && el.getClientRects().length > 0;
+}
+
+function findStep(reached: number): { index: number; el: HTMLElement } | null {
   if (document.querySelector(POPUPS)) return null;
   // With a dialog open, only its own buttons count, not the page behind it.
   const scope =
     document.querySelector(`${DIALOG}:not([data-closed])`) ?? document;
   // Later steps win: once a plan is saved, the center page shows both
-  // Add Route and the new routes.
-  for (let index = STEPS.length - 1; index >= 0; index--) {
+  // Add Route and the new routes. Steps more than one past the furthest
+  // reached wait their turn, so a replay doesn't skip to routes saved before.
+  for (
+    let index = Math.min(reached + 1, STEPS.length - 1);
+    index >= 0;
+    index--
+  ) {
     const el = scope.querySelector<HTMLElement>(STEPS[index]!.target);
     if (
-      el &&
-      el.getClientRects().length > 0 &&
+      isShown(el) &&
       // A closed dialog stays mounted while it fades out.
       !el.closest(`${DIALOG}[data-closed]`)
     ) {
@@ -157,88 +185,160 @@ function position(
   bubble.style.visibility = "visible";
 }
 
-export function DemoTour() {
-  const [done, setDone] = useState(true);
-  const [step, setStep] = useState<number | null>(null);
+type Phase = "off" | "tour" | "reminder";
+type Hint = number | "reminder";
 
-  const shownRef = useRef<number | null>(null);
+export function DemoTour() {
+  const router = useRouter();
+  const [phase, setPhase] = useState<Phase>("off");
+  const [hint, setHint] = useState<Hint | null>(null);
+  const [leaving, setLeaving] = useState(false);
+
+  const shownRef = useRef<Hint | null>(null);
+  const reachedRef = useRef(0);
+  const leaveTimerRef = useRef<number | null>(null);
   const targetRef = useRef<HTMLElement | null>(null);
   const ringRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const arrowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setDone(window.localStorage.getItem(DONE_KEY) === "1");
+    if (window.localStorage.getItem(DONE_KEY) === "1") return;
+    reachedRef.current = Number(window.localStorage.getItem(STEP_KEY)) || 0;
+    setPhase("tour");
   }, []);
 
-  const finish = useCallback(() => {
-    window.localStorage.setItem(DONE_KEY, "1");
-    setDone(true);
+  // Fade the hint out, then go on to the next phase.
+  const leave = useCallback((next: Phase) => {
+    if (leaveTimerRef.current !== null) return;
+    setLeaving(true);
+    leaveTimerRef.current = window.setTimeout(() => {
+      leaveTimerRef.current = null;
+      setLeaving(false);
+      setHint(null);
+      setPhase(next);
+    }, FADE_MS);
   }, []);
+
+  const end = useCallback(
+    (next: Phase) => {
+      window.localStorage.setItem(DONE_KEY, "1");
+      leave(next);
+    },
+    [leave],
+  );
+
+  // The header's Take the tour button: start over from the centers list.
+  useEffect(() => {
+    const start = () => {
+      if (leaveTimerRef.current !== null) {
+        window.clearTimeout(leaveTimerRef.current);
+        leaveTimerRef.current = null;
+      }
+      window.localStorage.removeItem(DONE_KEY);
+      window.localStorage.removeItem(STEP_KEY);
+      reachedRef.current = 0;
+      setLeaving(false);
+      setHint(null);
+      setPhase("tour");
+      router.push("/");
+    };
+    window.addEventListener(START_EVENT, start);
+    return () => window.removeEventListener(START_EVENT, start);
+  }, [router]);
 
   const place = useCallback(() => {
-    const index = shownRef.current;
+    const shown = shownRef.current;
     const target = targetRef.current;
     const ring = ringRef.current;
     const bubble = bubbleRef.current;
     const arrow = arrowRef.current;
-    if (index === null || !target || !ring || !bubble || !arrow) return;
-    position(target, STEPS[index]!.side, ring, bubble, arrow);
+    if (shown === null || !target || !ring || !bubble || !arrow) return;
+    const { side } = shown === "reminder" ? REMINDER : STEPS[shown]!;
+    position(target, side, ring, bubble, arrow);
   }, []);
 
-  // Each step mounts hidden; place it before the browser paints it.
+  // Each hint mounts hidden; place it before the browser paints it.
   useLayoutEffect(() => {
-    shownRef.current = step;
+    shownRef.current = hint;
+    if (typeof hint === "number" && hint > reachedRef.current) {
+      reachedRef.current = hint;
+      window.localStorage.setItem(STEP_KEY, String(hint));
+    }
     place();
-  }, [step, place]);
+  }, [hint, place]);
 
   // Check every frame, so the hint keeps up with dialogs opening and
   // resizing, tabs switching and pages scrolling.
   useEffect(() => {
-    if (done) return;
+    if (phase === "off" || leaving) return;
     let frame = 0;
     const tick = () => {
-      const found = findStep();
-      targetRef.current = found?.el ?? null;
-      const index = found?.index ?? null;
-      if (index === shownRef.current) place();
-      else setStep(index);
+      let next: Hint | null = null;
+      if (phase === "tour") {
+        const found = findStep(reachedRef.current);
+        targetRef.current = found?.el ?? null;
+        next = found?.index ?? null;
+      } else {
+        const el = document.querySelector<HTMLElement>(REMINDER.target);
+        targetRef.current = isShown(el) ? el : null;
+        next = targetRef.current ? "reminder" : null;
+      }
+      if (next === shownRef.current) place();
+      else setHint(next);
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [done, place]);
+  }, [phase, leaving, place]);
 
   // Pressing Play is the last step.
   useEffect(() => {
-    if (done) return;
+    if (phase !== "tour") return;
     const onClick = (e: MouseEvent) => {
       if (
         shownRef.current === STEPS.length - 1 &&
         targetRef.current?.contains(e.target as Node)
       ) {
-        finish();
+        end("off");
       }
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [done, finish]);
+  }, [phase, end]);
 
-  if (done || step === null) return null;
-  const { title, body } = STEPS[step]!;
+  // The reminder goes away on its own.
+  useEffect(() => {
+    if (hint !== "reminder") return;
+    const timer = window.setTimeout(() => leave("off"), REMINDER_MS);
+    return () => window.clearTimeout(timer);
+  }, [hint, leave]);
+
+  if (phase === "off" || hint === null) return null;
+  const isReminder = hint === "reminder";
+  const { title, body } = isReminder ? REMINDER : STEPS[hint]!;
+  const fade = leaving
+    ? "animate-out fade-out-0 fill-mode-forwards"
+    : "animate-in fade-in-0";
 
   return (
-    <div key={step}>
+    <div key={hint}>
       <div
         ref={ringRef}
         aria-hidden
-        className="pointer-events-none fixed left-0 top-0 z-[52] rounded-lg ring-2 ring-primary"
+        className={cn(
+          "pointer-events-none fixed left-0 top-0 z-[52] rounded-lg ring-2 ring-primary duration-200",
+          fade,
+        )}
         style={{ visibility: "hidden" }}
       />
       <div
         ref={bubbleRef}
         role="status"
-        className="fixed left-0 top-0 z-[52] w-64 rounded-lg bg-primary p-3 text-primary-foreground shadow-xl"
+        className={cn(
+          "fixed left-0 top-0 z-[52] w-64 rounded-lg bg-primary p-3 text-primary-foreground shadow-xl duration-200",
+          fade,
+        )}
         style={{ visibility: "hidden" }}
       >
         <div
@@ -249,16 +349,28 @@ export function DemoTour() {
         <p className="text-[13px] font-semibold">{title}</p>
         <p className="mt-1 text-[12px] leading-snug text-white/85">{body}</p>
         <div className="mt-2.5 flex items-center justify-between text-[11px] text-white/70">
-          <span className="tabular-nums">
-            {step + 1} of {STEPS.length}
-          </span>
-          <button
-            type="button"
-            onClick={finish}
-            className="font-medium hover:text-white"
-          >
-            Skip tour
-          </button>
+          {isReminder ? (
+            <button
+              type="button"
+              onClick={() => leave("off")}
+              className="ml-auto font-medium hover:text-white"
+            >
+              Got it
+            </button>
+          ) : (
+            <>
+              <span className="tabular-nums">
+                {hint + 1} of {STEPS.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => end("reminder")}
+                className="font-medium hover:text-white"
+              >
+                Skip tour
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
