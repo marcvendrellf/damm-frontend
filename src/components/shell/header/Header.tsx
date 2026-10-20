@@ -91,7 +91,7 @@ export function Header({ onToggleSidebar, sidebarOpen }: Props) {
           onClick={startDemoTour}
           aria-label="Take the tour"
           data-tour="restart"
-          className="mr-3 flex h-7 shrink-0 items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-ink-muted transition-colors hover:bg-white/[0.04] hover:text-ink"
+          className="mr-3 flex h-7 shrink-0 items-center gap-1.5 rounded-md bg-primary px-2.5 text-[13px] font-medium text-primary-foreground transition-colors hover:bg-primary-hover"
         >
           <IconHelpCircle className="size-4" aria-hidden />
           <span className="hidden sm:inline">Take the tour</span>

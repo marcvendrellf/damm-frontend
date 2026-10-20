@@ -3,8 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import { cn } from "@/lib/utils";
-
 // A first-visit guide for the demo: a hint next to the thing to click next,
 // from Login to driving a route on the map. The step is read from what is on
 // screen, so the hint follows the visitor wherever they go. It ends when they
@@ -102,6 +100,18 @@ const OPPOSITE: Record<Side, Side> = {
 
 const clamp = (v: number, min: number, max: number) =>
   Math.min(Math.max(v, min), max);
+
+// Opacity only: the hint is placed with a transform, so it must not be
+// animated, or the hint would slide in from the corner.
+function fade(els: (HTMLElement | null)[], from: number, to: number) {
+  for (const el of els) {
+    el?.animate([{ opacity: from }, { opacity: to }], {
+      duration: FADE_MS,
+      easing: "ease",
+      fill: "forwards",
+    });
+  }
+}
 
 export function startDemoTour() {
   window.dispatchEvent(new Event(START_EVENT));
@@ -212,6 +222,7 @@ export function DemoTour() {
   const leave = useCallback((next: Phase) => {
     if (leaveTimerRef.current !== null) return;
     setLeaving(true);
+    fade([ringRef.current, bubbleRef.current], 1, 0);
     leaveTimerRef.current = window.setTimeout(() => {
       leaveTimerRef.current = null;
       setLeaving(false);
@@ -266,6 +277,7 @@ export function DemoTour() {
       window.localStorage.setItem(STEP_KEY, String(hint));
     }
     place();
+    if (hint !== null) fade([ringRef.current, bubbleRef.current], 0, 1);
   }, [hint, place]);
 
   // Check every frame, so the hint keeps up with dialogs opening and
@@ -317,28 +329,19 @@ export function DemoTour() {
   if (phase === "off" || hint === null) return null;
   const isReminder = hint === "reminder";
   const { title, body } = isReminder ? REMINDER : STEPS[hint]!;
-  const fade = leaving
-    ? "animate-out fade-out-0 fill-mode-forwards"
-    : "animate-in fade-in-0";
 
   return (
     <div key={hint}>
       <div
         ref={ringRef}
         aria-hidden
-        className={cn(
-          "pointer-events-none fixed left-0 top-0 z-[52] rounded-lg ring-2 ring-primary duration-200",
-          fade,
-        )}
+        className="pointer-events-none fixed left-0 top-0 z-[52] rounded-lg ring-2 ring-primary"
         style={{ visibility: "hidden" }}
       />
       <div
         ref={bubbleRef}
         role="status"
-        className={cn(
-          "fixed left-0 top-0 z-[52] w-64 rounded-lg bg-primary p-3 text-primary-foreground shadow-xl duration-200",
-          fade,
-        )}
+        className="fixed left-0 top-0 z-[52] w-64 rounded-lg bg-primary p-3 text-primary-foreground shadow-xl"
         style={{ visibility: "hidden" }}
       >
         <div
