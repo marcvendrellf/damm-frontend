@@ -88,7 +88,11 @@ export function LoginForm({
         />
       </div>
 
-      <Button type="submit" disabled={submitting !== null}>
+      <Button
+        type="submit"
+        disabled={submitting !== null}
+        data-tour="login"
+      >
         {submitting === "email" ? "Signing in…" : "Login"}
       </Button>
 

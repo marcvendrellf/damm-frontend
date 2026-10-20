@@ -111,7 +111,10 @@ export function CenterDetailPage({ center, routes }: Props) {
           <RouteHero route={selectedRoute} center={center} />
         </div>
       ) : (
-        <div className="px-6 md:px-10 pt-8 pb-10 flex flex-col gap-7">
+        <div
+          className="px-6 md:px-10 pt-8 pb-10 flex flex-col gap-7"
+          data-tour="routes"
+        >
           <div>
             <h2 className="headline text-ink">{center.name}</h2>
             <p className="body-lg text-ink-muted mt-2">

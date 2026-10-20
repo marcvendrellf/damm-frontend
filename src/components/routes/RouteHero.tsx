@@ -81,7 +81,7 @@ export function RouteHero({ route, center }: RouteHeroProps) {
             <IconTruck aria-hidden />
             Truck
           </TabsTab>
-          <TabsTab value="map">
+          <TabsTab value="map" data-tour="map-tab">
             <IconMap2 aria-hidden />
             Map
           </TabsTab>

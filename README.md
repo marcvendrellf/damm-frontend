@@ -60,7 +60,7 @@ GOOGLE_GENERATIVE_AI_API_KEY=<your key>
 NEXT_PUBLIC_DEMO_MODE=1 pnpm dev
 ```
 
-Runs the app without the backend. Every backend call is answered from [`public/demo-data/`](public/demo-data/), captured from the backend's `seed.json`: the catalog, the 665 seeded transports, and one optimizer run for each of the 35 days with pending orders, with the routes it saves and their OSRM road geometry. Routes you save or delete are kept in a cookie. Catalog edits are turned off, and the planner assistant gives a fixed reply. See [`src/lib/api/demo/`](src/lib/api/demo/). The live demo at [smarttruck.marcvendrell.cat](https://smarttruck.marcvendrell.cat) runs this way.
+Runs the app without the backend. Every backend call is answered from [`public/demo-data/`](public/demo-data/), captured from the backend's `seed.json`: the catalog, the 665 seeded transports, and one optimizer run for each of the 35 days with pending orders, with the routes it saves and their OSRM road geometry. Routes you save or delete are kept in a cookie. Catalog edits are turned off, and the planner assistant gives a fixed reply. See [`src/lib/api/demo/`](src/lib/api/demo/). First-time visitors get a short tour ([`DemoTour`](src/components/demo/DemoTour.tsx)) that points at the next thing to click, from Login to playing a route on the map; it ends at Play or Skip and is remembered in `localStorage`. The live demo at [smarttruck.marcvendrell.cat](https://smarttruck.marcvendrell.cat) runs this way.
 
 To capture the data again, start seven backends from a fresh `seed.json` on ports 8101–8107 and one more on 8108, then:
 

@@ -205,7 +205,12 @@ export function DataTable<T>({
             ) : null}
             {toolbarTrailing}
             {addButtonLabel ? (
-              <Button variant="outline" size="sm" onClick={onAdd}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onAdd}
+                data-table-add
+              >
                 <IconPlus />
                 <span className="hidden lg:inline">{addButtonLabel}</span>
               </Button>
@@ -246,6 +251,7 @@ export function DataTable<T>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
+                  data-row-id={row.id}
                   data-state={row.id === selectedRowId ? "selected" : undefined}
                   onClick={() => onRowClick?.(row.original)}
                   className={onRowClick ? "h-[53px] cursor-pointer" : "h-[53px]"}

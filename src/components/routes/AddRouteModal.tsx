@@ -374,6 +374,7 @@ function FormPhase({
           disabled={loadingDates || !hasDates}
           className="inline-flex h-8 items-center justify-center gap-2 rounded-md bg-white px-3 text-[12px] font-medium text-[#111111] ring-1 ring-foreground/10 transition-colors hover:bg-white/90 disabled:opacity-50"
           title="Generate routes"
+          data-tour="generate"
         >
           <ShinyText
             className="font-medium"
@@ -537,6 +538,7 @@ function ReviewPhase({
             type="button"
             onClick={onSaveAll}
             disabled={saving || suggestions.length === 0}
+            data-tour="save-all"
           >
             {saving
               ? "Saving..."

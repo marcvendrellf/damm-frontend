@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, JetBrains_Mono } from "next/font/google";
+import { DemoTour } from "@/components/demo/DemoTour";
+import { DEMO_MODE } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -25,7 +27,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={cn("dark", geist.variable, jetbrainsMono.variable)}>
-      <body className="min-h-screen antialiased">{children}</body>
+      <body className="min-h-screen antialiased">
+        {children}
+        {DEMO_MODE ? <DemoTour /> : null}
+      </body>
     </html>
   );
 }

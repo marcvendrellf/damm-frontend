@@ -480,6 +480,7 @@ function SimControls({
             onClick={onPlayPause}
             disabled={disabled}
             className="gap-1.5"
+            data-tour="play"
           >
             {playing ? (
               <IconPlayerPause className="size-4" />
