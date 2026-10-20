@@ -20,50 +20,50 @@ type Step = {
 const STEPS: Step[] = [
   {
     target: '[data-tour="login"]',
-    title: "Log in",
+    title: "Click Login",
     body: "The demo account is already filled in.",
     side: "right",
   },
   {
     target: '[data-tour="centers"] tr[data-row-id]',
-    title: "Open the center",
-    body: "DDI Mollet is where the trucks leave from.",
+    title: "Click DDI Mollet",
+    body: "It's the distribution center the trucks leave from.",
     side: "bottom",
   },
   {
     target: '[data-tour="routes"] [data-table-add]',
-    title: "Plan a day",
-    body: "Add Route asks the optimizer to plan a day of deliveries.",
+    title: "Click Add Route",
+    body: "The optimizer will plan a day of deliveries from this center.",
     side: "bottom",
   },
   {
     target: '[data-tour="generate"]',
-    title: "Generate the routes",
+    title: "Click Generate Routes",
     body: "A day with orders is already picked. The optimizer splits them between the trucks.",
     side: "bottom",
   },
   {
     target: '[data-tour="save-all"]',
-    title: "Save the plan",
-    body: "Each truck on the left is one route. Click them to compare, then save them all.",
+    title: "Click Save all",
+    body: "Each truck on the left is one route. You can click them to compare them first.",
     side: "top",
   },
   {
     target: '[data-tour="routes"] tr[data-row-id]',
-    title: "Open a route",
+    title: "Click a route",
     body: "See how its truck is loaded and where it drives.",
     side: "bottom",
   },
   {
     target: '[data-tour="map-tab"]',
-    title: "Open the map",
-    body: "Drag to turn the truck, or click a pallet to see what it carries. Then see the route on the map.",
+    title: "Click Map",
+    body: "But first, drag to turn the truck, or click a pallet to see what it carries.",
     side: "bottom",
   },
   {
     target: '[data-tour="play"]',
-    title: "Drive the route",
-    body: "Press Play to follow the truck from stop to stop.",
+    title: "Click Play",
+    body: "Follow the truck from stop to stop.",
     side: "top",
   },
 ];
@@ -82,6 +82,14 @@ const STEP_KEY = "smarttruck_tour_step";
 const START_EVENT = "smarttruck:tour";
 const FADE_MS = 200;
 const REMINDER_MS = 5000;
+// After this long without a click, the ring pulses: the visitor may be
+// waiting for a Next button, when what moves the tour on is clicking the
+// highlighted one.
+const IDLE_MS = 6000;
+const PULSE: Keyframe[] = [
+  { boxShadow: "0 0 0 0 rgb(94 106 210 / 0.7)" },
+  { boxShadow: "0 0 0 14px rgb(94 106 210 / 0)" },
+];
 const GAP = 12;
 const MARGIN = 8;
 
@@ -209,6 +217,7 @@ export function DemoTour() {
   const leaveTimerRef = useRef<number | null>(null);
   const targetRef = useRef<HTMLElement | null>(null);
   const ringRef = useRef<HTMLDivElement>(null);
+  const pulseRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const arrowRef = useRef<HTMLDivElement>(null);
 
@@ -319,6 +328,33 @@ export function DemoTour() {
     return () => document.removeEventListener("click", onClick, true);
   }, [phase, end]);
 
+  // Pulse the ring when the visitor seems stuck, and stop at their next click.
+  useEffect(() => {
+    if (typeof hint !== "number" || leaving) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let timer = 0;
+    let pulse: Animation | undefined;
+    const wait = () => {
+      pulse?.cancel();
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        pulse = pulseRef.current?.animate(PULSE, {
+          duration: 1400,
+          easing: "ease-out",
+          iterations: Infinity,
+        });
+      }, IDLE_MS);
+    };
+    wait();
+    const events = ["pointerdown", "keydown", "wheel"] as const;
+    for (const e of events) window.addEventListener(e, wait, true);
+    return () => {
+      window.clearTimeout(timer);
+      pulse?.cancel();
+      for (const e of events) window.removeEventListener(e, wait, true);
+    };
+  }, [hint, leaving]);
+
   // The reminder goes away on its own.
   useEffect(() => {
     if (hint !== "reminder") return;
@@ -337,7 +373,10 @@ export function DemoTour() {
         aria-hidden
         className="pointer-events-none fixed left-0 top-0 z-[52] rounded-lg ring-2 ring-primary"
         style={{ visibility: "hidden" }}
-      />
+      >
+        {/* Its own layer: the ring itself is drawn with box-shadow. */}
+        <div ref={pulseRef} className="absolute inset-0 rounded-[inherit]" />
+      </div>
       <div
         ref={bubbleRef}
         role="status"
