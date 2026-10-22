@@ -85,7 +85,7 @@ export function AddCenterModal({ open, onOpenChange }: Props) {
             <Label htmlFor="name">Name</Label>
             <Input
               id="name"
-              placeholder="e.g. DDI Mollet"
+              placeholder="e.g. Magatzem Mollet"
               {...form.register("name")}
             />
             {form.formState.errors.name ? (

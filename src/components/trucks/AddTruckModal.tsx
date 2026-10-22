@@ -83,7 +83,7 @@ export function AddTruckModal({ open, onOpenChange }: Props) {
             <Label htmlFor="plate">Plate</Label>
             <Input
               id="plate"
-              placeholder="e.g. DDI-6P-07"
+              placeholder="e.g. MAG-6P-07"
               {...form.register("plate")}
             />
             {form.formState.errors.plate && (

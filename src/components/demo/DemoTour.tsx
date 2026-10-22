@@ -26,7 +26,7 @@ const STEPS: Step[] = [
   },
   {
     target: '[data-tour="centers"] tr[data-row-id]',
-    title: "Click DDI Mollet",
+    title: "Click Magatzem Mollet",
     body: "It's the distribution center the trucks leave from.",
     side: "bottom",
   },

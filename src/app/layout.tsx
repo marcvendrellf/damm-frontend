@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "SmartTruck Planner",
-  description: "Damm/DDI route and load optimization planner",
+  description: "Damm route and load optimization planner",
 };
 
 // Root layout intentionally minimal — the (app) and (auth) route groups own
