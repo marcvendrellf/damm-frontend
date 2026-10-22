@@ -70,7 +70,7 @@ python3 scripts/demo-data/build_fixtures.py <plans-dir> public/demo-data
 python3 scripts/demo-data/capture_osrm.py public/demo-data
 ```
 
-The names of people in the demo data are invented: the drivers, the customers listed under a person's name, and the people bars are registered to. The seed has the real ones from Damm's dataset, so a fresh capture brings them back and they need swapping again before it's published.
+The names in the demo data are invented: the drivers, every customer and the people they're registered to, and the distribution center (Magatzem Mollet) with its `MAG-` truck codes. Addresses and coordinates are the captured ones, so the map and the routes still line up. The seed has the real names from Damm's dataset, so a fresh capture brings them back and they need swapping again before it's published.
 
 ---
 
